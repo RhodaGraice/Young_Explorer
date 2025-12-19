@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "544208733296",
+    "project_id": "quizzies-99ccd",
+    "storage_bucket": "quizzies-99ccd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544208733296:android:f68f68513315ecf979a0b5",
+        "android_client_info": {
+          "package_name": "com.example.quizzies"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "544208733296-2ch3e142dhimtpcmpm86ndsjif3aohhm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.quizzies",
+            "certificate_hash": "307ba7d0e452c602ea40e7e539ef8b5c2acabc5d"
+          }
+        },
+        {
+          "client_id": "544208733296-1cpgq92e8s7f2i79c3sttctacamkvmsi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa2--3933yCRLMCet6MhvPE828Remrv-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "544208733296-1cpgq92e8s7f2i79c3sttctacamkvmsi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
