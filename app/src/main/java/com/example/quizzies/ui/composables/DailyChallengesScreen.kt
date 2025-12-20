@@ -31,21 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
-data class DailyChallenge(
-    val name: String,
-    val description: String,
-    val reward: Int,
-    var isCompleted: Boolean = false // This would be updated from your ViewModel or data source
-)
-
-val dailyChallenges = listOf(
-    DailyChallenge("Word Wizard", "Spell 5 words correctly", 10),
-    DailyChallenge("Math Magician", "Solve 3 math problems", 10),
-    DailyChallenge("Alphabet Ace", "Trace 10 letters", 5),
-    DailyChallenge("Perfect Pronunciation", "Listen to 5 word pronunciations", 5),
-    DailyChallenge("Category Conqueror", "Complete a whole category of words", 20)
-)
+import com.example.quizzies.data.DailyChallenge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

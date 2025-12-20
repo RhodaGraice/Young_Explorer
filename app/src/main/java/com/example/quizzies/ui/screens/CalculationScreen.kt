@@ -42,6 +42,7 @@ fun CalculationScreen(
     stars: Int,
     profileImageUri: Uri?,
     onCorrect: () -> Unit,
+    onWrong: () -> Unit,
     onNavigateUp: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -111,6 +112,7 @@ fun CalculationScreen(
                                 answeredCorrectly = true
                             } else {
                                 feedback = "Nice try, have another go!"
+                                onWrong()
                             }
                         }) {
                             Text(answer.toString(), style = MaterialTheme.typography.titleMedium)

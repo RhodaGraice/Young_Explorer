@@ -77,16 +77,6 @@ fun getSpellingAnswerOptions(correctWord: SpellingWord): List<SpellingWord> {
     return options.shuffled()
 }
 
-fun createDefaultDailyChallenges(): List<com.example.quizzies.ui.composables.DailyChallenge> {
-    return listOf(
-        com.example.quizzies.ui.composables.DailyChallenge ("First Word", "Learn your first word of the day", 10, false),
-        com.example.quizzies.ui.composables.DailyChallenge ("First Number", "Solve your first number problem", 10, false),
-        com.example.quizzies.ui.composables.DailyChallenge ("Word Novice", "Learn 5 new words today", 25,false),
-        com.example.quizzies.ui.composables.DailyChallenge ("Number Novice", "Solve 5 number problems today", 25, false),
-        com.example.quizzies.ui.composables.DailyChallenge ("Word Expert", "Get 10 new words right today", 50, false)
-    )
-}
-
 private val storyItems = listOf("apples", "pencils", "toys", "books", "stickers", "marbles", "crayons")
 private val storyContainers = listOf("baskets", "boxes", "bags")
 private val storyFriends = listOf("friends", "students", "kids")

@@ -53,6 +53,7 @@ fun SpellingBeeScreen(
     profileImageUri: Uri?,
     onNavigateUp: () -> Unit,
     onCorrect: (SpellingWord) -> Unit,
+    onWrong: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var word by remember { mutableStateOf(wordsDatabase.random()) }
@@ -89,6 +90,7 @@ fun SpellingBeeScreen(
                 onCorrect(word)
             } else {
                 feedback = "Not quite, try again!"
+                onWrong()
             }
         } else {
             feedback = null

@@ -10,7 +10,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
@@ -25,13 +24,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.quizzies.data.DailyChallenge
 import com.example.quizzies.data.SpellingWord
 import com.example.quizzies.data.allAchievements
 import com.example.quizzies.data.createDefaultDailyChallenges
 import com.example.quizzies.data.numberAchievements
 import com.example.quizzies.data.wordAchievements
 import com.example.quizzies.data.wordsDatabase
-import com.example.quizzies.ui.composables.DailyChallenge
 import com.example.quizzies.ui.composables.DailyChallengesScreen
 import com.example.quizzies.ui.composables.StickerBookScreen
 import com.example.quizzies.ui.screens.AlphabetScreen
@@ -46,6 +45,7 @@ import com.example.quizzies.ui.screens.SpellingMenuScreen
 import com.example.quizzies.ui.screens.SplashScreen
 import com.example.quizzies.ui.screens.WordDetailScreen
 import com.example.quizzies.ui.theme.LetsLearnTheme
+import com.example.quizzies.utils.SoundManager
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -60,8 +60,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.launch
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
@@ -74,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var navController: NavHostController
     private var userListener: ListenerRegistration? = null
+    private lateinit var soundManager: SoundManager
 
     private var username by mutableStateOf("")
     private var stars by mutableIntStateOf(0)
@@ -95,18 +94,17 @@ class MainActivity : ComponentActivity() {
 
         auth = FirebaseAuth.getInstance()
         db = Firebase.firestore
+        soundManager = SoundManager(this)
 
         setContent {
             LetsLearnTheme {
                 navController = rememberNavController()
 
-                var user by remember { mutableStateOf<FirebaseUser?>(null) }
-
                 DisposableEffect(auth) {
                     val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
                         userListener?.remove()
-                        user = firebaseAuth.currentUser
-                        if (user == null) {
+                        val currentUser = firebaseAuth.currentUser
+                        if (currentUser == null) {
                             isInitialDataLoaded = false
                             val currentRoute = navController.currentDestination?.route
                             if (currentRoute !in listOf("login", "signup", "splash")) {
@@ -115,7 +113,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         } else {
-                            listenToUserData(user!!)
+                            if (!isInitialDataLoaded) {
+                                navController.navigate("main") {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
+                            listenToUserData(currentUser)
                         }
                     }
                     auth.addAuthStateListener(authListener)
@@ -149,17 +155,8 @@ class MainActivity : ComponentActivity() {
                             error = signUpError
                         )
                     }
-                    composable(
-                        "main/{username}?profileImageUri={profileImageUri}",
-                        arguments = listOf(
-                            navArgument("username") { type = StringType },
-                            navArgument("profileImageUri") {
-                                type = StringType; nullable = true
-                            },
-                        )
-                    ) { backStackEntry ->
-                        val name = backStackEntry.arguments?.getString("username") ?: ""
-                        MainScreen(navController = navController, username = name, streak = streak)
+                    composable("main") { 
+                        MainScreen(navController = navController, username = username, streak = { streak })
                     }
                     composable("spelling_menu") {
                         SpellingMenuScreen(
@@ -180,6 +177,7 @@ class MainActivity : ComponentActivity() {
                             stars = stars,
                             profileImageUri = profileImageUri,
                             onCorrect = ::onWordCorrect,
+                            onWrong = ::onWrongAnswer,
                             onNavigateUp = { navController.navigateUp() })
                     }
                     composable(
@@ -214,7 +212,8 @@ class MainActivity : ComponentActivity() {
                             username = username,
                             stars = stars,
                             profileImageUri = profileImageUri,
-                            onCorrect = { onNumberCorrect() },
+                            onCorrect = ::onNumberCorrect,
+                            onWrong = ::onWrongAnswer,
                             onNavigateUp = { navController.navigateUp() })
                     }
                     composable("sticker_book") {
@@ -240,9 +239,7 @@ class MainActivity : ComponentActivity() {
                                         if (task.isSuccessful) {
                                             username = newUsername
                                             db.collection("users").document(uid).update("username", newUsername)
-                                            val encodedUsername = URLEncoder.encode(newUsername, StandardCharsets.UTF_8.toString())
-                                            val encodedUri = profileImageUri?.toString()?.let { Uri.encode(it) } ?: ""
-                                            navController.navigate("main/$encodedUsername?profileImageUri=$encodedUri") {
+                                            navController.navigate("main") {
                                                 popUpTo("main") { inclusive = true }
                                             }
                                         }
@@ -259,6 +256,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        soundManager.release()
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun listenToUserData(user: FirebaseUser) {
         val userRef = db.collection("users").document(user.uid)
@@ -270,11 +272,9 @@ class MainActivity : ComponentActivity() {
             }
 
             if (snapshot != null && snapshot.exists()) {
-                val name = snapshot.getString("username") ?: user.displayName ?: "Player"
-                val uriString = snapshot.getString("profileImageUri")
-                this.username = name
-                this.profileImageUri = uriString?.toUri()
-                this.stars = snapshot.getLong("stars")?.toInt() ?: 0
+                this.username = snapshot.getString("username") ?: user.displayName ?: "Player"
+                this.profileImageUri = (snapshot.getString("profileImageUri"))?.toUri()
+                this.stars = (snapshot.getLong("stars") ?: 0L).toInt()
 
                 val lastLoginTimestamp = snapshot.getTimestamp("lastLogin")?.toDate() ?: Date()
                 val today = Date()
@@ -282,56 +282,53 @@ class MainActivity : ComponentActivity() {
                 if (!isSameDay(lastLoginTimestamp, today)) {
                     val lastLoginCal = Calendar.getInstance().apply { time = lastLoginTimestamp }
                     lastLoginCal.add(Calendar.DAY_OF_YEAR, 1)
-                    val newStreak = if (isSameDay(lastLoginCal.time, today)) snapshot.getLong("streak")?.toInt()?.plus(1) ?: 1 else 1
+                    val newStreak = if (isSameDay(lastLoginCal.time, today)) (snapshot.getLong("streak") ?: 0L) + 1 else 1
                     val defaultChallenges = createDefaultDailyChallenges()
                     userRef.update(
                         "streak", newStreak,
                         "lastLogin", Timestamp.now(),
                         "wordsLearnedToday", hashMapOf("date" to Timestamp.now(), "words" to emptyList<String>()),
                         "numbersSolvedToday", hashMapOf("date" to Timestamp.now(), "count" to 0L),
-                        "dailyChallenges", defaultChallenges.map {
+                        "dailyChallenges", defaultChallenges.map { challenge ->
                             mapOf(
-                                "name" to it.name,
-                                "description" to it.description,
-                                "reward" to it.reward,
-                                "isCompleted" to it.isCompleted
+                                "name" to challenge.name,
+                                "description" to challenge.description,
+                                "reward" to challenge.reward,
+                                "isCompleted" to challenge.isCompleted
                             )
                         }
                     )
                     this.dailyChallengesState = defaultChallenges
                 } else {
-                    this.streak = snapshot.getLong("streak")?.toInt() ?: 0
+                    this.streak = (snapshot.getLong("streak") ?: 0L).toInt()
                     val dailyChallengesData = snapshot.get("dailyChallenges") as? List<Map<String, Any>>
-                    this.dailyChallengesState = dailyChallengesData?.map {
-                        DailyChallenge(
-                            it["name"] as String,
-                            it["description"] as String,
-                            (it["reward"] as Long).toInt(),
-                            it["isCompleted"] as Boolean
-                        )
+
+                    this.dailyChallengesState = dailyChallengesData?.mapNotNull { challengeMap ->
+                        try {
+                            val name = challengeMap["name"] as? String
+                            val description = challengeMap["description"] as? String
+                            val reward = (challengeMap["reward"] as? Number)?.toInt()
+                            val isCompleted = challengeMap["isCompleted"] as? Boolean
+
+                            if (name != null && description != null && reward != null && isCompleted != null) {
+                                DailyChallenge(name, description, reward, isCompleted)
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Failed to parse daily challenge", e)
+                            null
+                        }
                     } ?: createDefaultDailyChallenges()
                 }
 
                 this.unlockedAchievements = snapshot.get("unlockedAchievements") as? List<String> ?: emptyList()
-
                 this.learnedWords = (snapshot.get("learnedWords") as? List<String>) ?: emptyList()
+                isInitialDataLoaded = true
 
-
-                if (!isInitialDataLoaded) {
-                    val encodedUsername = URLEncoder.encode(name, StandardCharsets.UTF_8.toString())
-                    val encodedUri = uriString?.let { Uri.encode(it) } ?: ""
-                    navController.navigate("main/$encodedUsername?profileImageUri=$encodedUri") {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            inclusive = true
-                        }
-                        launchSingleTop = true
-                    }
-                    isInitialDataLoaded = true
-                }
             } else {
                 Log.d("MainActivity", "Current data: null. Creating new user...")
-                val name = user.displayName ?: "Player"
-                createNewUserInFirestore(user, name)
+                createNewUserInFirestore(user, user.displayName ?: "Player")
             }
         }
     }
@@ -351,7 +348,7 @@ class MainActivity : ComponentActivity() {
             "learnedWords" to emptyList<String>(),
             "wordsLearnedToday" to hashMapOf("date" to Timestamp.now(), "words" to emptyList<String>()),
             "numbersSolvedToday" to hashMapOf("date" to Timestamp.now(), "count" to 0L),
-            "dailyChallenges" to defaultChallenges.map { mapOf("name" to it.name, "description" to it.description, "reward" to it.reward, "isCompleted" to it.isCompleted) }
+            "dailyChallenges" to defaultChallenges.map { challenge -> mapOf("name" to challenge.name, "description" to challenge.description, "reward" to challenge.reward, "isCompleted" to challenge.isCompleted) }
         )
 
         userRef.set(newUser)
@@ -385,13 +382,8 @@ class MainActivity : ComponentActivity() {
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     val user = task.result?.user
-                                    if (user != null) {
-                                        if (task.result?.additionalUserInfo?.isNewUser == true) {
-                                            val username = googleIdTokenCredential.displayName ?: user.displayName ?: "Player"
-                                            createNewUserInFirestore(user, username)
-                                        } else {
-                                            listenToUserData(user)
-                                        }
+                                    if (user != null && task.result?.additionalUserInfo?.isNewUser == true) {
+                                        createNewUserInFirestore(user, googleIdTokenCredential.displayName ?: user.displayName ?: "Player")
                                     }
                                 } else {
                                     loginError = task.exception?.message
@@ -399,7 +391,7 @@ class MainActivity : ComponentActivity() {
                                 isGoogleSigningIn = false
                             }
                     } catch (e: GoogleIdTokenParsingException) {
-                        Log.e("MainActivity", "Google ID token parsing exception", e)
+                        Log.e("MainActivity", "Google ID token parsing failed", e)
                         loginError = "Google sign-in failed."
                         isGoogleSigningIn = false
                     }
@@ -420,12 +412,7 @@ class MainActivity : ComponentActivity() {
         loginError = null
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = task.result?.user
-                    if (user != null) {
-                        listenToUserData(user)
-                    }
-                } else {
+                if (!task.isSuccessful) {
                     loginError = task.exception?.message
                 }
                 isLoggingIn = false
@@ -438,12 +425,11 @@ class MainActivity : ComponentActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val user = task.result?.user
-                    if (user != null) {
+                    task.result?.user?.let { user ->
                         val profileUpdates = UserProfileChangeRequest.Builder()
                             .setDisplayName(username)
                             .build()
-                        user.updateProfile(profileUpdates).addOnCompleteListener { 
+                        user.updateProfile(profileUpdates).addOnCompleteListener { _ ->
                             createNewUserInFirestore(user, username)
                          }
                     }
@@ -454,14 +440,20 @@ class MainActivity : ComponentActivity() {
             }
     }
 
+    private fun onWrongAnswer() {
+        soundManager.playWrongSound()
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun onWordCorrect(word: SpellingWord) {
+        soundManager.playCorrectSound()
         val user = auth.currentUser ?: return
         val userRef = db.collection("users").document(user.uid)
 
         db.runTransaction { transaction ->
             val snapshot = transaction.get(userRef)
-            val newStars = snapshot.getLong("stars")!! + 1
+            val currentStars = snapshot.getLong("stars") ?: 0L
+            val newStars = currentStars + 1
             transaction.update(userRef, "stars", newStars)
 
             val learnedWords = (snapshot.get("learnedWords") as? MutableList<String>) ?: mutableListOf()
@@ -480,7 +472,6 @@ class MainActivity : ComponentActivity() {
                     "wordsLearnedToday" to hashMapOf("date" to Timestamp.now(), "words" to wordsLearnedToday)
                 ), com.google.firebase.firestore.SetOptions.merge())
 
-
                 val newUnlockedAchievements = mutableListOf<String>()
                 wordAchievements.forEach { achievement ->
                     if (!unlockedAchievements.contains(achievement.id) && learnedWords.size >= achievement.requiredCount) {
@@ -491,7 +482,9 @@ class MainActivity : ComponentActivity() {
                     transaction.update(userRef, "unlockedAchievements", FieldValue.arrayUnion(*newUnlockedAchievements.toTypedArray()))
                 }
             }
-            null
+            newStars
+        }.addOnSuccessListener { newStars ->
+            stars = newStars.toInt()
         }.addOnFailureListener { e ->
             Log.e("MainActivity", "Word correction transaction failed", e)
         }
@@ -499,12 +492,14 @@ class MainActivity : ComponentActivity() {
 
     @Suppress("UNCHECKED_CAST")
     private fun onNumberCorrect() {
+        soundManager.playCorrectSound()
         val user = auth.currentUser ?: return
         val userRef = db.collection("users").document(user.uid)
 
         db.runTransaction { transaction ->
             val snapshot = transaction.get(userRef)
-            val newStars = snapshot.getLong("stars")!! + 1
+            val currentStars = snapshot.getLong("stars") ?: 0L
+            val newStars = currentStars + 1
             transaction.update(userRef, "stars", newStars)
 
             val numbersSolvedTodayData = snapshot.get("numbersSolvedToday") as? Map<String, Any>
@@ -519,7 +514,6 @@ class MainActivity : ComponentActivity() {
                 "numbersSolvedToday" to hashMapOf("date" to Timestamp.now(), "count" to newNumbersSolvedCount)
             ), com.google.firebase.firestore.SetOptions.merge())
 
-
             val newUnlockedAchievements = mutableListOf<String>()
             numberAchievements.forEach { achievement ->
                 if (!unlockedAchievements.contains(achievement.id) && newNumbersSolvedCount.toInt() >= achievement.requiredCount) {
@@ -530,7 +524,9 @@ class MainActivity : ComponentActivity() {
             if (newUnlockedAchievements.isNotEmpty()) {
                 transaction.update(userRef, "unlockedAchievements", FieldValue.arrayUnion(*newUnlockedAchievements.toTypedArray()))
             }
-            null
+            newStars
+        }.addOnSuccessListener { newStars ->
+            stars = newStars.toInt()
         }.addOnFailureListener { e ->
             Log.e("MainActivity", "Number correction transaction failed", e)
         }
@@ -543,28 +539,40 @@ class MainActivity : ComponentActivity() {
 
         db.runTransaction { transaction ->
             val snapshot = transaction.get(userRef)
-            val newStars = snapshot.getLong("stars")!! + challenge.reward
+            val currentStars = snapshot.getLong("stars") ?: 0L
+            val newStars = currentStars + challenge.reward
             transaction.update(userRef, "stars", newStars)
 
-            val dailyChallenges = (snapshot.get("dailyChallenges") as? List<Map<String, Any>>)?.map { 
-                DailyChallenge(
-                    name = it["name"] as String,
-                    description = it["description"] as String,
-                    reward = (it["reward"] as Long).toInt(),
-                    isCompleted = it["isCompleted"] as Boolean
-                )
+            val dailyChallenges = (snapshot.get("dailyChallenges") as? List<Map<String, Any>>)?.mapNotNull { 
+                try {
+                    val name = it["name"] as? String
+                    val description = it["description"] as? String
+                    val reward = (it["reward"] as? Number)?.toInt()
+                    val isCompleted = it["isCompleted"] as? Boolean
+
+                    if (name != null && description != null && reward != null && isCompleted != null) {
+                        DailyChallenge(name, description, reward, isCompleted)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
             }?.toMutableList() ?: mutableListOf()
 
             val challengeIndex = dailyChallenges.indexOfFirst { it.name == challenge.name }
             if (challengeIndex != -1) {
                 dailyChallenges[challengeIndex] = challenge.copy(isCompleted = true)
-                transaction.update(userRef, "dailyChallenges", dailyChallenges.map { 
-                    mapOf("name" to it.name, "description" to it.description, "reward" to it.reward, "isCompleted" to it.isCompleted)
+                transaction.update(userRef, "dailyChallenges", dailyChallenges.map { c ->
+                    mapOf("name" to c.name, "description" to c.description, "reward" to c.reward, "isCompleted" to c.isCompleted)
                  })
             }
-            null
-        }.addOnFailureListener { e ->
-            Log.e("MainActivity", "Challenge completion transaction failed", e)
+            Pair(newStars, dailyChallenges)
+        }.addOnSuccessListener { result ->
+            stars = result.first.toInt()
+            dailyChallengesState = result.second
+        }.addOnFailureListener { _ ->
+            Log.e("MainActivity", "Challenge completion transaction failed")
         }
     }
 

@@ -37,123 +37,120 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.quizzies.ui.theme.LetsLearnTheme
 
 @Composable
-fun MainScreen(navController: NavController, username: String, streak: Int, modifier: Modifier = Modifier) {
-    LetsLearnTheme {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+fun MainScreen(navController: NavController, username: String, streak: () -> Int, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 32.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 32.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "WELCOME, $username!",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Whatshot,
-                        contentDescription = "Streak",
-                        tint = Color(0xFFFFA000)
-                    )
-                    Text(
-                        text = "$streak Days",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    MenuButton(
-                        text = "Learn Alphabet",
-                        icon = Icons.Default.SortByAlpha,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("alphabet_menu") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Learn Numbers",
-                        icon = Icons.Default.Dialpad,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("numbers_menu") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Practice Words",
-                        icon = Icons.AutoMirrored.Filled.MenuBook,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("spelling_menu") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Spelling Bee",
-                        icon = Icons.Default.Spellcheck,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("spelling_bee") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Practice Math",
-                        icon = Icons.Filled.Calculate,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("calculation") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Sticker Book",
-                        icon = Icons.Filled.Stars,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("sticker_book") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Daily Challenges",
-                        icon = Icons.Filled.Check,
-                        color = Color(0xFF009688),
-                        onClick = { navController.navigate("daily_challenges") }
-                    )
-                }
-                item {
-                    MenuButton(
-                        text = "Settings",
-                        icon = Icons.Default.Settings,
-                        color = Color.Gray,
-                        onClick = { navController.navigate("settings") }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
             Text(
-                text = "Let's Learn: Fun learning for kids!",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 16.dp)
+                "Welcome, $username!",
+                style = MaterialTheme.typography.headlineMedium
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Whatshot,
+                    contentDescription = "Streak",
+                    tint = Color(0xFFFFA000)
+                )
+                Text(
+                    text = "${streak()} Days",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                MenuButton(
+                    text = "Learn Alphabet",
+                    icon = Icons.Default.SortByAlpha,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("alphabet_menu") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Learn Numbers",
+                    icon = Icons.Default.Dialpad,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("numbers_menu") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Practice Words",
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("spelling_menu") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Spelling Bee",
+                    icon = Icons.Default.Spellcheck,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("spelling_bee") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Practice Math",
+                    icon = Icons.Filled.Calculate,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("calculation") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Sticker Book",
+                    icon = Icons.Filled.Stars,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("sticker_book") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Daily Challenges",
+                    icon = Icons.Filled.Check,
+                    color = Color(0xFF009688),
+                    onClick = { navController.navigate("daily_challenges") }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Settings",
+                    icon = Icons.Default.Settings,
+                    color = Color.Gray,
+                    onClick = { navController.navigate("settings") }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Text(
+            text = "Let's Learn: Fun learning for kids!",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
     }
 }
 

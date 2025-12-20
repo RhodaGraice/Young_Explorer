@@ -12,13 +12,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavController,
@@ -76,68 +84,74 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
     ) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Sound Settings
-        Column(horizontalAlignment = Alignment.Start) {
-            Text("Sound", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Music")
-                Switch(
-                    checked = musicEnabled,
-                    onCheckedChange = { musicEnabled = it }
-                )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(it)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Sound Settings
+            Column(horizontalAlignment = Alignment.Start) {
+                Text("Sound", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Music")
+                    Switch(
+                        checked = musicEnabled,
+                        onCheckedChange = { musicEnabled = it }
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Sound Effects")
+                    Switch(
+                        checked = soundEffectsEnabled,
+                        onCheckedChange = { soundEffectsEnabled = it }
+                    )
+                }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Sound Effects")
-                Switch(
-                    checked = soundEffectsEnabled,
-                    onCheckedChange = { soundEffectsEnabled = it }
-                )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Profile Settings
+            Column(horizontalAlignment = Alignment.Start) {
+                Text("Profile", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { showUsernameDialog = true }) {
+                    Text("Change Username")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                    Text("Change Profile Picture")
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
-        // Profile Settings
-        Column(horizontalAlignment = Alignment.Start) {
-            Text("Profile", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { showUsernameDialog = true }) {
-                Text("Change Username")
+            // Logout Button
+            Button(onClick = onLogout) {
+                Text("Log Out")
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                Text("Change Profile Picture")
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Logout Button
-        Button(onClick = onLogout) {
-            Text("Log Out")
-        }
-
-        // Back Button
-        Button(onClick = { navController.navigateUp() }) {
-            Text("Back")
         }
     }
 }
