@@ -1,6 +1,8 @@
 package com.example.quizzies.ui.screens
 
 import android.net.Uri
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,11 +25,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +54,17 @@ fun WordDetailScreen(
     var options by remember { mutableStateOf(getSpellingAnswerOptions(word)) }
     var feedback by remember { mutableStateOf<String?>(null) }
     var answeredCorrectly by remember { mutableStateOf(false) }
+
+    val starScale = remember { Animatable(1f) }
+    val previousStars = remember { mutableIntStateOf(stars) }
+
+    LaunchedEffect(stars) {
+        if (stars > previousStars.intValue) {
+            starScale.animateTo(1.5f, animationSpec = tween(200))
+            starScale.animateTo(1f, animationSpec = tween(200))
+        }
+        previousStars.intValue = stars
+    }
 
     val title = when (word.category) {
         "Colors" -> "Guess the Color"
@@ -80,7 +95,9 @@ fun WordDetailScreen(
                 },
                 actions = {
                     Row(
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .scale(starScale.value),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(imageVector = Icons.Default.Star, contentDescription = "Stars", tint = Color(0xFFFFC107))

@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Dialpad
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.filled.Spellcheck
@@ -38,8 +40,38 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
+private data class MenuItem(
+    val text: String,
+    val icon: ImageVector,
+    val color: Color,
+    val route: String
+)
+
 @Composable
 fun MainScreen(navController: NavController, username: String, streak: () -> Int, modifier: Modifier = Modifier) {
+    val menuColors = listOf(
+        Color(0xFF4FC3F7), // Light Blue
+        Color(0xFF29B6F6),
+        Color(0xFF03A9F4),
+        Color(0xFF039BE5),
+        Color(0xFF0288D1),
+        Color(0xFF0277BD),
+        Color(0xFF81D4FA), // Extra Light Blue
+        Color(0xFF01579B)  // Dark Blue
+    )
+
+    val menuItems = listOf(
+        MenuItem("Learn Alphabet", Icons.Default.SortByAlpha, menuColors[0], "alphabet_menu"),
+        MenuItem("Learn Numbers", Icons.Default.Dialpad, menuColors[1], "numbers_menu"),
+        MenuItem("Practice Words", Icons.AutoMirrored.Filled.MenuBook, menuColors[2], "spelling_menu"),
+        MenuItem("Spelling Bee", Icons.Default.Spellcheck, menuColors[3], "spelling_bee"),
+        MenuItem("Practice Math", Icons.Filled.Calculate, menuColors[4], "calculation"),
+        MenuItem("Memory Match", Icons.Default.Memory, menuColors[6], "memory_match"),
+        MenuItem("Sticker Book", Icons.Filled.Stars, menuColors[5], "sticker_book"),
+        MenuItem("Daily Challenges", Icons.Filled.Check, menuColors[7], "daily_challenges"),
+        MenuItem("Settings", Icons.Default.Settings, Color.Gray, "settings")
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -77,68 +109,12 @@ fun MainScreen(navController: NavController, username: String, streak: () -> Int
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
+            items(menuItems) { item ->
                 MenuButton(
-                    text = "Learn Alphabet",
-                    icon = Icons.Default.SortByAlpha,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("alphabet_menu") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Learn Numbers",
-                    icon = Icons.Default.Dialpad,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("numbers_menu") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Practice Words",
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("spelling_menu") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Spelling Bee",
-                    icon = Icons.Default.Spellcheck,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("spelling_bee") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Practice Math",
-                    icon = Icons.Filled.Calculate,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("calculation") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Sticker Book",
-                    icon = Icons.Filled.Stars,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("sticker_book") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Daily Challenges",
-                    icon = Icons.Filled.Check,
-                    color = Color(0xFF009688),
-                    onClick = { navController.navigate("daily_challenges") }
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Settings",
-                    icon = Icons.Default.Settings,
-                    color = Color.Gray,
-                    onClick = { navController.navigate("settings") }
+                    text = item.text,
+                    icon = item.icon,
+                    color = item.color,
+                    onClick = { navController.navigate(item.route) }
                 )
             }
         }
@@ -171,13 +147,15 @@ private fun MenuButton(text: String, icon: ImageVector, color: Color, onClick: (
             Icon(
                 icon,
                 contentDescription = text,
-                modifier = Modifier.size(ButtonDefaults.IconSize)
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                tint = Color.White // Changed to white for better contrast on blue
             )
             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
             Text(
                 text,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color.White // Changed to white for better contrast on blue
             )
         }
     }

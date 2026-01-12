@@ -37,6 +37,7 @@ import com.example.quizzies.ui.screens.AlphabetScreen
 import com.example.quizzies.ui.screens.CalculationScreen
 import com.example.quizzies.ui.screens.LoginScreen
 import com.example.quizzies.ui.screens.MainScreen
+import com.example.quizzies.ui.screens.MemoryMatchScreen
 import com.example.quizzies.ui.screens.NumbersScreen
 import com.example.quizzies.ui.screens.SettingsScreen
 import com.example.quizzies.ui.screens.SignUpScreen
@@ -46,6 +47,7 @@ import com.example.quizzies.ui.screens.SplashScreen
 import com.example.quizzies.ui.screens.WordDetailScreen
 import com.example.quizzies.ui.theme.LetsLearnTheme
 import com.example.quizzies.utils.SoundManager
+import com.example.quizzies.utils.UserPreferences
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -73,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
     private var userListener: ListenerRegistration? = null
     private lateinit var soundManager: SoundManager
+    private lateinit var userPreferences: UserPreferences
 
     private var username by mutableStateOf("")
     private var stars by mutableIntStateOf(0)
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
     private var isLoggingIn by mutableStateOf(false)
     private var loginError by mutableStateOf<String?>(null)
     private var isInitialDataLoaded by mutableStateOf(false)
+    private var isSoundEnabled by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,6 +99,8 @@ class MainActivity : ComponentActivity() {
         auth = FirebaseAuth.getInstance()
         db = Firebase.firestore
         soundManager = SoundManager(this)
+        userPreferences = UserPreferences(this)
+        isSoundEnabled = userPreferences.isSoundEnabled()
 
         setContent {
             LetsLearnTheme {
@@ -225,10 +231,19 @@ class MainActivity : ComponentActivity() {
                             onChallengeCompleted = { onChallengeCompleted(it) },
                             onNavigateUp = { navController.navigateUp() })
                     }
+                    composable("memory_match") {
+                        MemoryMatchScreen(navController = navController)
+                    }
                     composable("settings") {
                         SettingsScreen(
                             navController = navController,
                             username = username,
+                            profileImageUri = profileImageUri,
+                            isSoundEnabled = isSoundEnabled,
+                            onSoundEnabledChange = {
+                                isSoundEnabled = it
+                                userPreferences.setSoundEnabled(it)
+                            },
                             onLogout = { auth.signOut() },
                             onUsernameChanged = { newUsername ->
                                 auth.currentUser?.uid?.let { uid ->
@@ -441,12 +456,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun onWrongAnswer() {
-        soundManager.playWrongSound()
+        if (isSoundEnabled) {
+            soundManager.playWrongSound()
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun onWordCorrect(word: SpellingWord) {
-        soundManager.playCorrectSound()
+        if (isSoundEnabled) {
+            soundManager.playCorrectSound()
+        }
         val user = auth.currentUser ?: return
         val userRef = db.collection("users").document(user.uid)
 
@@ -492,7 +511,9 @@ class MainActivity : ComponentActivity() {
 
     @Suppress("UNCHECKED_CAST")
     private fun onNumberCorrect() {
-        soundManager.playCorrectSound()
+        if (isSoundEnabled) {
+            soundManager.playCorrectSound()
+        }
         val user = auth.currentUser ?: return
         val userRef = db.collection("users").document(user.uid)
 

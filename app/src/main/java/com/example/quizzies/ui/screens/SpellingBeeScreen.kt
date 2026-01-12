@@ -1,6 +1,13 @@
 package com.example.quizzies.ui.screens
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,12 +38,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -61,6 +70,18 @@ fun SpellingBeeScreen(
     val targetSlots = remember { mutableStateListOf<Char?>() }
     val sourceLetters = remember { mutableStateListOf<Char>() }
     var feedback by remember { mutableStateOf<String?>(null) }
+    var answerCorrect by remember { mutableStateOf<Boolean?>(null) }
+
+    val starScale = remember { Animatable(1f) }
+    var previousStars by remember { mutableIntStateOf(stars) }
+
+    LaunchedEffect(stars) {
+        if (stars > previousStars) {
+            starScale.animateTo(1.5f, animationSpec = tween(200))
+            starScale.animateTo(1f, animationSpec = tween(200))
+        }
+        previousStars = stars
+    }
 
     LaunchedEffect(letters) {
         targetSlots.clear()
@@ -68,10 +89,11 @@ fun SpellingBeeScreen(
         sourceLetters.clear()
         sourceLetters.addAll(letters)
         feedback = null
+        answerCorrect = null
     }
 
-    LaunchedEffect(feedback) {
-        if (feedback?.startsWith("Awesome") == true) {
+    LaunchedEffect(answerCorrect) {
+        if (answerCorrect == true) {
             delay(1500)
             // Ensure the next word is different
             var nextWord = wordsDatabase.random()
@@ -87,13 +109,16 @@ fun SpellingBeeScreen(
             val spelledWord = targetSlots.joinToString("")
             if (spelledWord == word.name) {
                 feedback = "Awesome! You got a star! 🌟"
+                answerCorrect = true
                 onCorrect(word)
             } else {
                 feedback = "Not quite, try again!"
+                answerCorrect = false
                 onWrong()
             }
         } else {
             feedback = null
+            answerCorrect = null
         }
     }
 
@@ -128,7 +153,9 @@ fun SpellingBeeScreen(
                 },
                 actions = {
                     Row(
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .scale(starScale.value),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(imageVector = Icons.Default.Star, contentDescription = "Stars", tint = Color(0xFFFFC107))
@@ -204,14 +231,25 @@ fun SpellingBeeScreen(
                 }
             }
 
-            feedback?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (it.startsWith("Awesome")) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+            AnimatedVisibility(
+                visible = feedback != null,
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .height(48.dp),
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut()
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = feedback.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (answerCorrect == true) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }
@@ -220,6 +258,11 @@ fun SpellingBeeScreen(
 
 @Composable
 fun LetterCard(letter: Char, index: Int, modifier: Modifier = Modifier) {
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(key1 = letter) {
+        scale.animateTo(1.2f, animationSpec = tween(100))
+        scale.animateTo(1f, animationSpec = tween(100))
+    }
     val colors = listOf(
         Color(0xFFE0BBE4), // Light Purple
         Color(0xFF957DAD), // Muted Purple
@@ -229,7 +272,9 @@ fun LetterCard(letter: Char, index: Int, modifier: Modifier = Modifier) {
     )
     val cardColor = colors[index % colors.size]
     Card(
-        modifier = modifier.size(42.dp),
+        modifier = modifier
+            .size(42.dp)
+            .scale(scale.value),
         colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Box(

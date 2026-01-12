@@ -1,11 +1,18 @@
 package com.example.quizzies.ui.screens
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -22,11 +29,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +44,7 @@ import com.example.quizzies.data.generateMathProblem
 import com.example.quizzies.data.getAnswerOptions
 import com.example.quizzies.ui.theme.LetsLearnTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +62,19 @@ fun CalculationScreen(
         var options by remember { mutableStateOf(getAnswerOptions(problem.answer)) }
         var feedback by remember { mutableStateOf<String?>(null) }
         var answeredCorrectly by remember { mutableStateOf(false) }
+
+        val starScale = remember { Animatable(1f) }
+        var previousStars by remember { mutableIntStateOf(stars) }
+
+        val buttonScale = remember { Animatable(1f) }
+
+        LaunchedEffect(stars) {
+            if (stars > previousStars) {
+                starScale.animateTo(1.5f, animationSpec = tween(200))
+                starScale.animateTo(1f, animationSpec = tween(200))
+            }
+            previousStars = stars
+        }
 
         fun nextQuestion() {
             val newProblem = generateMathProblem()
@@ -79,7 +103,9 @@ fun CalculationScreen(
                     },
                     actions = {
                         Row(
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .scale(starScale.value),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(imageVector = Icons.Default.Star, contentDescription = "Stars", tint = Color(0xFFFFC107))
@@ -105,16 +131,24 @@ fun CalculationScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     options.forEach { answer ->
-                        Button(onClick = {
-                            if (answer == problem.answer) {
-                                feedback = "Correct! +1 Star 🌟"
-                                onCorrect()
-                                answeredCorrectly = true
-                            } else {
-                                feedback = "Nice try, have another go!"
-                                onWrong()
-                            }
-                        }) {
+                        val scope = rememberCoroutineScope()
+                        Button(
+                            onClick = {
+                                if (answer == problem.answer) {
+                                    feedback = "Correct! +1 Star 🌟"
+                                    onCorrect()
+                                    answeredCorrectly = true
+                                    scope.launch {
+                                        buttonScale.animateTo(1.2f, animationSpec = tween(100))
+                                        buttonScale.animateTo(1f, animationSpec = tween(100))
+                                    }
+                                } else {
+                                    feedback = "Nice try, have another go!"
+                                    onWrong()
+                                }
+                            },
+                            modifier = Modifier.scale(if (answer == problem.answer && answeredCorrectly) buttonScale.value else 1f)
+                        ) {
                             Text(answer.toString(), style = MaterialTheme.typography.titleMedium)
                         }
                     }
@@ -122,9 +156,24 @@ fun CalculationScreen(
 
                 Spacer(modifier = Modifier.size(32.dp))
 
-                feedback?.let {
-                    val feedbackColor = if (it.startsWith("Correct")) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
-                    Text(it, style = MaterialTheme.typography.titleMedium, color = feedbackColor, textAlign = TextAlign.Center)
+                AnimatedVisibility(
+                    visible = feedback != null,
+                    modifier = Modifier.height(48.dp),
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val feedbackColor = if (answeredCorrectly) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = feedback.orEmpty(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = feedbackColor,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
