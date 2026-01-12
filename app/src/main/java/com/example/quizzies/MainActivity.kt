@@ -279,6 +279,25 @@ class MainActivity : ComponentActivity() {
                 val lastLoginTimestamp = snapshot.getTimestamp("lastLogin")?.toDate() ?: Date()
                 val today = Date()
 
+                val dailyChallengesData = snapshot.get("dailyChallenges") as? List<Map<String, Any>>
+                this.dailyChallengesState = dailyChallengesData?.mapNotNull { challengeMap ->
+                    try {
+                        val name = challengeMap["name"] as? String
+                        val description = challengeMap["description"] as? String
+                        val reward = (challengeMap["reward"] as? Number)?.toInt()
+                        val isCompleted = challengeMap["isCompleted"] as? Boolean
+
+                        if (name != null && description != null && reward != null && isCompleted != null) {
+                            DailyChallenge(name, description, reward, isCompleted)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Failed to parse daily challenge", e)
+                        null
+                    }
+                } ?: createDefaultDailyChallenges()
+
                 if (!isSameDay(lastLoginTimestamp, today)) {
                     val lastLoginCal = Calendar.getInstance().apply { time = lastLoginTimestamp }
                     lastLoginCal.add(Calendar.DAY_OF_YEAR, 1)
@@ -301,25 +320,6 @@ class MainActivity : ComponentActivity() {
                     this.dailyChallengesState = defaultChallenges
                 } else {
                     this.streak = (snapshot.getLong("streak") ?: 0L).toInt()
-                    val dailyChallengesData = snapshot.get("dailyChallenges") as? List<Map<String, Any>>
-
-                    this.dailyChallengesState = dailyChallengesData?.mapNotNull { challengeMap ->
-                        try {
-                            val name = challengeMap["name"] as? String
-                            val description = challengeMap["description"] as? String
-                            val reward = (challengeMap["reward"] as? Number)?.toInt()
-                            val isCompleted = challengeMap["isCompleted"] as? Boolean
-
-                            if (name != null && description != null && reward != null && isCompleted != null) {
-                                DailyChallenge(name, description, reward, isCompleted)
-                            } else {
-                                null
-                            }
-                        } catch (e: Exception) {
-                            Log.e("MainActivity", "Failed to parse daily challenge", e)
-                            null
-                        }
-                    } ?: createDefaultDailyChallenges()
                 }
 
                 this.unlockedAchievements = snapshot.get("unlockedAchievements") as? List<String> ?: emptyList()

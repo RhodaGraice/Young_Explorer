@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.google.firebase.crashlytics)
+    alias(libs.plugins.firebase.perf)
 }
 
 android {
@@ -62,6 +63,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(platform(libs.firebase.bom))
+
 
     // Firebase
     implementation(platform(libs.firebase.bom))
@@ -69,6 +72,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.perf)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
