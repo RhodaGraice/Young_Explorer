@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Dialpad
@@ -50,14 +51,14 @@ private data class MenuItem(
 @Composable
 fun MainScreen(navController: NavController, username: String, streak: () -> Int, modifier: Modifier = Modifier) {
     val menuColors = listOf(
-        Color(0xFF4FC3F7), // Light Blue
-        Color(0xFF29B6F6),
-        Color(0xFF03A9F4),
-        Color(0xFF039BE5),
-        Color(0xFF0288D1),
-        Color(0xFF0277BD),
-        Color(0xFF81D4FA), // Extra Light Blue
-        Color(0xFF01579B)  // Dark Blue
+        Color(0xFF4CAF50), // Green 500
+        Color(0xFF66BB6A), // Green 400
+        Color(0xFF81C784), // Green 300
+        Color(0xFF388E3C), // Green 700
+        Color(0xFF2E7D32), // Green 800
+        Color(0xFF1B5E20), // Green 900
+        Color(0xFFA5D6A7), // Green 200
+        Color(0xFFC8E6C9)  // Green 100
     )
 
     val menuItems = listOf(
@@ -65,10 +66,11 @@ fun MainScreen(navController: NavController, username: String, streak: () -> Int
         MenuItem("Learn Numbers", Icons.Default.Dialpad, menuColors[1], "numbers_menu"),
         MenuItem("Practice Words", Icons.AutoMirrored.Filled.MenuBook, menuColors[2], "spelling_menu"),
         MenuItem("Spelling Bee", Icons.Default.Spellcheck, menuColors[3], "spelling_bee"),
-        MenuItem("Practice Math", Icons.Filled.Calculate, menuColors[4], "calculation"),
-        MenuItem("Memory Match", Icons.Default.Memory, menuColors[6], "memory_match"),
-        MenuItem("Sticker Book", Icons.Filled.Stars, menuColors[5], "sticker_book"),
-        MenuItem("Daily Challenges", Icons.Filled.Check, menuColors[7], "daily_challenges"),
+        MenuItem("Practice Math", Icons.Filled.Calculate, menuColors[4], "math_levels"),
+        MenuItem("Memory Match", Icons.Default.Memory, menuColors[5], "memory_match"),
+        MenuItem("Drawing", Icons.Default.Brush, menuColors[6], "drawing"),
+        MenuItem("Sticker Book", Icons.Filled.Stars, menuColors[7], "sticker_book"),
+        MenuItem("Daily Challenges", Icons.Filled.Check, menuColors[0], "daily_challenges"),
         MenuItem("Settings", Icons.Default.Settings, Color.Gray, "settings")
     )
 

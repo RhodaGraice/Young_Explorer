@@ -25,7 +25,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,14 +55,14 @@ fun WordDetailScreen(
     var answeredCorrectly by remember { mutableStateOf(false) }
 
     val starScale = remember { Animatable(1f) }
-    val previousStars = remember { mutableIntStateOf(stars) }
+    var previousStars by remember { mutableStateOf(stars) }
 
     LaunchedEffect(stars) {
-        if (stars > previousStars.intValue) {
+        if (stars > previousStars) {
             starScale.animateTo(1.5f, animationSpec = tween(200))
             starScale.animateTo(1f, animationSpec = tween(200))
         }
-        previousStars.intValue = stars
+        previousStars = stars
     }
 
     val title = when (word.category) {
